@@ -1,0 +1,189 @@
+# Tool Pool Configuration for Bigtool Dynamic Selection
+# Defines available tool implementations for each capability
+
+tool_pools:
+  
+  # OCR Tools - Extract text from documents
+  ocr:
+    providers:
+      - name: tesseract
+        priority: 1
+        cost: low
+        latency: fast
+        accuracy: medium
+        conditions:
+          - context.document_quality >= 0.7
+          - context.language in ['en', 'es', 'fr', 'de']
+        
+      - name: google_vision
+        priority: 2
+        cost: medium
+        latency: medium
+        accuracy: high
+        conditions:
+          - context.document_quality < 0.7
+          - context.has_handwriting == true
+        
+      - name: aws_textract
+        priority: 3
+        cost: high
+        latency: slow
+        accuracy: very_high
+        conditions:
+          - context.document_type in ['receipt', 'form', 'invoice']
+          - context.requires_table_extraction == true
+
+  # Enrichment Tools - Vendor data enrichment
+  enrichment:
+    providers:
+      - name: vendor_db
+        priority: 1
+        cost: free
+        latency: fast
+        data_quality: medium
+        conditions:
+          - context.vendor_name in internal_db
+        
+      - name: clearbit
+        priority: 2
+        cost: medium
+        latency: medium
+        data_quality: high
+        conditions:
+          - context.vendor_domain != null
+          - context.region in ['US', 'EU']
+        
+      - name: people_data_labs
+        priority: 3
+        cost: high
+        latency: medium
+        data_quality: very_high
+        conditions:
+          - context.requires_deep_enrichment == true
+
+  # ERP Connectors - Integration with ERP systems
+  erp_connector:
+    providers:
+      - name: mock_erp
+        priority: 1
+        cost: free
+        latency: fast
+        conditions:
+          - context.environment == 'development'
+        
+      - name: sap_sandbox
+        priority: 2
+        cost: medium
+        latency: medium
+        conditions:
+          - context.erp_system == 'SAP'
+          - context.environment in ['staging', 'production']
+        
+      - name: netsuite
+        priority: 3
+        cost: medium
+        latency: medium
+        conditions:
+          - context.erp_system == 'NetSuite'
+          - context.environment in ['staging', 'production']
+
+  # Database Tools - Data persistence
+  db:
+    providers:
+      - name: sqlite
+        priority: 1
+        cost: free
+        latency: fast
+        scalability: low
+        conditions:
+          - context.environment == 'development'
+          - context.data_volume < 10000
+        
+      - name: postgres
+        priority: 2
+        cost: medium
+        latency: medium
+        scalability: high
+        conditions:
+          - context.environment in ['staging', 'production']
+          - context.requires_acid == true
+        
+      - name: dynamodb
+        priority: 3
+        cost: high
+        latency: low
+        scalability: very_high
+        conditions:
+          - context.requires_serverless == true
+          - context.access_pattern == 'key_value'
+
+  # Email/Notification Tools
+  email:
+    providers:
+      - name: ses
+        priority: 1
+        cost: low
+        latency: medium
+        reliability: high
+        conditions:
+          - context.cloud_provider == 'aws'
+          - context.volume < 50000
+        
+      - name: sendgrid
+        priority: 2
+        cost: medium
+        latency: low
+        reliability: very_high
+        conditions:
+          - context.requires_analytics == true
+          - context.volume >= 50000
+        
+      - name: smartlead
+        priority: 3
+        cost: high
+        latency: medium
+        reliability: high
+        conditions:
+          - context.requires_campaigns == true
+
+# Selection Strategy Configuration
+selection_strategy:
+  default_method: rule_based  # Options: rule_based, llm_based, hybrid
+  
+  # Rule-based selection uses conditions and priorities
+  rule_based:
+    enabled: true
+    fallback_to_highest_priority: true
+    
+  # LLM-based selection uses AI to choose best tool
+  llm_based:
+    enabled: true
+    model: gpt-4
+    temperature: 0.3
+    prompt_template: |
+      You are a tool selection expert. Given the following context and available tools,
+      select the most appropriate tool for the task.
+      
+      Context: {context}
+      Available Tools: {tools}
+      Task: {task_description}
+      
+      Consider: cost, latency, accuracy, and task requirements.
+      Respond with only the tool name.
+    
+  # Hybrid uses rules first, then LLM if multiple candidates
+  hybrid:
+    enabled: false
+    use_llm_when_multiple_matches: true
+
+# Fallback Configuration
+fallback:
+  enabled: true
+  retry_count: 2
+  retry_delay_seconds: 1
+  fallback_order:
+    ocr: [tesseract, google_vision, aws_textract]
+    enrichment: [vendor_db, clearbit, people_data_labs]
+    erp_connector: [mock_erp, sap_sandbox, netsuite]
+    db: [sqlite, postgres, dynamodb]
+    email: [ses, sendgrid, smartlead]

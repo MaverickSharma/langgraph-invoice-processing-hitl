@@ -1,0 +1,27 @@
+{
+  "invoice_id": "INV-2024-002",
+  "vendor_name": "TechVendor LLC",
+  "vendor_tax_id": "98-7654321",
+  "invoice_date": "2024-12-20",
+  "due_date": "2025-01-20",
+  "amount": 12500.00,
+  "currency": "USD",
+  "po_reference": "PO-2024-789",
+  "line_items": [
+    {
+      "desc": "Cloud Services - December",
+      "qty": 1,
+      "unit_price": 5000.00,
+      "total": 5000.00
+    },
+    {
+      "desc": "API Integration Services",
+      "qty": 1,
+      "unit_price": 7500.00,
+      "total": 7500.00
+    }
+  ],
+  "attachments": [
+    "invoice_techvendor_002.pdf"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "invoice_id": "INV-2024-001",
+  "vendor_name": "Acme Corporation",
+  "vendor_tax_id": "12-3456789",
+  "invoice_date": "2024-12-15",
+  "due_date": "2025-01-15",
+  "amount": 5500.00,
+  "currency": "USD",
+  "po_reference": "PO-2024-456",
+  "line_items": [
+    {
+      "desc": "Product A - Widget Manufacturing",
+      "qty": 10,
+      "unit_price": 100.00,
+      "total": 1000.00
+    },
+    {
+      "desc": "Product B - Component Assembly",
+      "qty": 5,
+      "unit_price": 200.00,
+      "total": 1000.00
+    },
+    {
+      "desc": "Consulting Services - Q4 2024",
+      "qty": 1,
+      "unit_price": 3000.00,
+      "total": 3000.00
+    }
+  ],
+  "attachments": [
+    "invoice_acme_001.pdf"
+  ]
+}

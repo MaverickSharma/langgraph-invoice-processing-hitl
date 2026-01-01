@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Processing - Human Review</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .pending-reviews {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .pending-reviews h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .review-item {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .review-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .review-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .review-amount {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .review-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .review-reason {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .review-reason strong {
+            color: #856404;
+        }
+
+        .review-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-accept {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-accept:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-view {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #5568d3;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Langie - Invoice Processing <span class="badge badge-success">HITL Review</span></h1>
+            <p>Human-In-The-Loop review dashboard for invoice matching discrepancies</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Pending Reviews</h3>
+                <div class="value" id="stat-pending">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Workflows</h3>
+                <div class="value" id="stat-total">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Avg Match Score</h3>
+                <div class="value" id="stat-match">-</div>
+            </div>
+        </div>
+
+        <div class="pending-reviews">
+            <h2>📋 Pending Reviews</h2>
+            <div id="reviews-container">
+                <div class="loading">Loading pending reviews...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decision Modal -->
+    <div class="modal" id="decision-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Review Invoice</h2>
+                <p id="modal-invoice-id"></p>
+            </div>
+            <div class="form-group">
+                <label for="reviewer-id">Your Email</label>
+                <input type="email" id="reviewer-id" placeholder="john.doe@company.com" required>
+            </div>
+            <div class="form-group">
+                <label for="review-notes">Notes (optional)</label>
+                <textarea id="review-notes" placeholder="Add any notes about your decision..."></textarea>
+            </div>
+            <div class="review-actions">
+                <button class="btn btn-accept" onclick="submitDecision('ACCEPT')">✓ Accept Invoice</button>
+                <button class="btn btn-reject" onclick="submitDecision('REJECT')">✗ Reject Invoice</button>
+                <button class="btn btn-view" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let currentCheckpointId = null;
+
+        // Load pending reviews on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPendingReviews();
+            // Refresh every 10 seconds
+            setInterval(loadPendingReviews, 10000);
+        });
+
+        async function loadPendingReviews() {
+            try {
+                const response = await fetch('/api/human-review/pending');
+                const data = await response.json();
+                
+                const container = document.getElementById('reviews-container');
+                
+                if (data.items && data.items.length > 0) {
+                    container.innerHTML = data.items.map(item => createReviewCard(item)).join('');
+                    
+                    // Update stats
+                    document.getElementById('stat-pending').textContent = data.items.length;
+                    document.getElementById('stat-total').textContent = data.items.length;
+                    
+                    // Calculate average match score if available
+                    const avgMatch = data.items.reduce((sum, item) => sum + (item.match_score || 0), 0) / data.items.length;
+                    document.getElementById('stat-match').textContent = (avgMatch * 100).toFixed(0) + '%';
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                            </svg>
+                            <h3>All caught up!</h3>
+                            <p>No pending reviews at the moment.</p>
+                        </div>
+                    `;
+                    document.getElementById('stat-pending').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading reviews:', error);
+                showToast('Error loading reviews', 'error');
+            }
+        }
+
+        function createReviewCard(item) {
+            const createdDate = new Date(item.created_at).toLocaleString();
+            
+            return `
+                <div class="review-item">
+                    <div class="review-header">
+                        <div class="review-title">
+                            ${item.invoice_id} - ${item.vendor_name}
+                        </div>
+                        <div class="review-amount">
+                            ${item.currency} ${item.amount.toLocaleString()}
+                        </div>
+                    </div>
+                    <div class="review-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Workflow ID</span>
+                            <span class="detail-value">${item.workflow_id}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Created</span>
+                            <span class="detail-value">${createdDate}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Priority</span>
+                            <span class="detail-value">
+                                <span class="badge ${item.priority <= 3 ? 'badge-danger' : 'badge-warning'}">
+                                    ${item.priority <= 3 ? 'High' : 'Medium'}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="review-reason">
+                        <strong>⚠️ Hold Reason:</strong> ${item.reason_for_hold}
+                    </div>
+                    <div class="review-actions">
+                        <button class="btn btn-accept" onclick="openDecisionModal('${item.checkpoint_id}', '${item.invoice_id}', 'ACCEPT')">
+                            ✓ Accept
+                        </button>
+                        <button class="btn btn-reject" onclick="openDecisionModal('${item.checkpoint_id}', '${item.invoice_id}', 'REJECT')">
+                            ✗ Reject
+                        </button>
+                        <button class="btn btn-view" onclick="viewDetails('${item.checkpoint_id}')">
+                            👁️ View Details
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openDecisionModal(checkpointId, invoiceId, suggestedDecision) {
+            currentCheckpointId = checkpointId;
+            document.getElementById('modal-title').textContent = `Review Invoice: ${suggestedDecision}`;
+            document.getElementById('modal-invoice-id').textContent = `Invoice: ${invoiceId}`;
+            document.getElementById('decision-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('decision-modal').classList.remove('active');
+            currentCheckpointId = null;
+            document.getElementById('reviewer-id').value = '';
+            document.getElementById('review-notes').value = '';
+        }
+
+        async function submitDecision(decision) {
+            const reviewerId = document.getElementById('reviewer-id').value;
+            const notes = document.getElementById('review-notes').value;
+            
+            if (!reviewerId) {
+                showToast('Please enter your email', 'error');
+                return;
+            }
+            
+            if (!currentCheckpointId) {
+                showToast('No checkpoint selected', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/human-review/decision', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        checkpoint_id: currentCheckpointId,
+                        decision: decision,
+                        notes: notes,
+                        reviewer_id: reviewerId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast(`✅ Decision submitted! Workflow ${decision === 'ACCEPT' ? 'resumed' : 'marked for manual handling'}.`, 'success');
+                    closeModal();
+                    // Reload reviews after 1 second
+                    setTimeout(loadPendingReviews, 1000);
+                } else {
+                    showToast(`Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting decision:', error);
+                showToast('Error submitting decision', 'error');
+            }
+        }
+
+        async function viewDetails(checkpointId) {
+            try {
+                const response = await fetch(`/api/human-review/checkpoint/${checkpointId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('Checkpoint details:', data);
+                    alert(`Checkpoint Details:\n\nInvoice: ${data.invoice_id}\nVendor: ${data.vendor_name}\nAmount: ${data.currency} ${data.amount}\nMatch Score: ${(data.match_score * 100).toFixed(0)}%\n\nReason: ${data.reason_for_hold}\n\nSee console for full details.`);
+                } else {
+                    showToast(`Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading details:', error);
+                showToast('Error loading details', 'error');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.background = type === 'error' ? '#dc3545' : '#28a745';
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
